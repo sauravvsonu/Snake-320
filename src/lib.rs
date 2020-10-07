@@ -70,6 +70,10 @@ impl Vector{
         sum.equal_to(&Vector::new(0_f64, 0_f64))
     }
 
+    pub fn dot_product(&self, other: &Vector) -> f64 {
+        self.x * other.x + self.y * other.y
+    }
+
 }
 
 pub struct Segment<'a> {
@@ -94,6 +98,14 @@ impl<'a> Segment<'a> {
         let first = Segment::new(self.start, point);
         let second = Segment::new(point, self.end);
         are_equal(self.length(), first.length() + second.length())
+    }
+
+    pub fn get_projected_point(&self, point: &Vector) -> Vector{
+        let vector = self.get_vector();
+        let diff = point.subtract(&self.start);
+        let u = diff.dot_product(&vector) / vector.dot_product(&vector);
+         let scaled = vector.scale_by(u);
+         self.start.add(&scaled)
     }
 }
 
@@ -276,5 +288,23 @@ impl Game{
           self.process_food();
       }
 
-     
+      pub fn is_over(&self) -> bool {
+        let snake_len = self.snake.len();
+        let last = self.snake[snake_len - 1];
+        let Vector {x , y} = last;
+        if x < 0_f64 || x > f64::from(self.width) || y < 0_f64 || y > f64::from(self.height){
+            return true;
+        }
+        if snake_len < 5 {
+            return false;
+        }
+
+        let segments = get_segments_from_vectors(&self.snake[..snake_len - 3]);
+        segments.iter().any(|segment| {
+            let projected = segment.get_projected_point(&last);
+            segment.is_point_inside(&projected) && Segment::new(&last, &projected).length() < 0.5
+        })
+
+
+      }
 }
